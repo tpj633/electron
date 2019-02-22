@@ -72,3 +72,4 @@ revert_build_swiftshader_for_arm32.patch
 fix_backup_includes_for_ptrace_get_thread_area_on_arm_arm64.patch
 color_chooser_mac.patch
 color_chooser_win.patch
+fixme_disable_field-trial_descriptor_dcheck.patch
