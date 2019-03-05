@@ -275,16 +275,21 @@ void SetCertVerifyProcInIO(
       ->SetVerifyProc(proc);
 }
 
+void ResolvePromise(atom::util::Promise promise) {
+  promise.Resolve();
+}
+
 void ClearHostResolverCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    const base::Closure& callback) {
+    atom::util::Promise promise) {
   auto* request_context = context_getter->GetURLRequestContext();
   auto* cache = request_context->host_resolver()->GetHostCache();
   if (cache) {
     cache->clear();
     DCHECK_EQ(0u, cache->size());
-    if (!callback.is_null())
-      RunCallbackInUI(callback);
+    base::PostTaskWithTraits(
+        FROM_HERE, {BrowserThread::UI},
+        base::BindOnce(&ResolvePromise, std::move(promise)));
   }
 }
 
@@ -564,15 +569,17 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
-void Session::ClearHostResolverCache(mate::Arguments* args) {
-  base::Closure callback;
-  args->GetNext(&callback);
+v8::Local<v8::Promise> Session::ClearHostResolverCache() {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::PostTaskWithTraits(
       FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&ClearHostResolverCacheInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     callback));
+                     std::move(promise)));
+  return handle;
 }
 
 void Session::ClearAuthCache(mate::Arguments* args) {
