@@ -275,13 +275,9 @@ void SetCertVerifyProcInIO(
       ->SetVerifyProc(proc);
 }
 
-void ResolvePromise(atom::util::Promise promise) {
-  promise.Resolve();
-}
-
 void ClearHostResolverCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
-    atom::util::Promise promise) {
+    util::Promise promise) {
   auto* request_context = context_getter->GetURLRequestContext();
   auto* cache = request_context->host_resolver()->GetHostCache();
   if (cache) {
@@ -289,7 +285,8 @@ void ClearHostResolverCacheInIO(
     DCHECK_EQ(0u, cache->size());
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
-        base::BindOnce(&ResolvePromise, std::move(promise)));
+        base::BindOnce([](util::Promise promise) { promise.Resolve(); },
+                       std::move(promise)));
   }
 }
 
