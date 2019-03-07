@@ -20,15 +20,6 @@
 
 #include "atom/common/node_includes.h"
 
-namespace {
-
-void OnGetFilePathToCompletedLog(const atom::util::CopyablePromise& promise,
-                                 const base::FilePath& file_path) {
-  promise.GetPromise().Resolve(file_path);
-}
-
-}  // namespace
-
 namespace atom {
 
 namespace api {
@@ -120,8 +111,9 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
     for (auto& promise : stop_callback_queue_) {
       // TODO(zcbenz): Remove the use of CopyablePromise when the
       // GetFilePathToCompletedLog API accepts OnceCallback.
-      net_log_writer_->GetFilePathToCompletedLog(base::Bind(
-          &OnGetFilePathToCompletedLog, util::CopyablePromise(promise)));
+      net_log_writer_->GetFilePathToCompletedLog(
+          base::Bind(util::Promise::ResolveCopyablePromise<base::FilePath>,
+                     util::CopyablePromise(promise)));
     }
     stop_callback_queue_.clear();
   }
