@@ -339,6 +339,14 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
+#### `ses.clearHostResolverCache(callback)`
+
+* `callback` Function (optional) - Called when operation is done.
+
+Clears the host resolver cache.
+
+**[Deprecated Soon](promisification.md)**
+
 #### `ses.clearHostResolverCache()`
 
 Returns `Promise<void>` - Resolves when the operation is complete.
