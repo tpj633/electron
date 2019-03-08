@@ -285,8 +285,7 @@ void ClearHostResolverCacheInIO(
     DCHECK_EQ(0u, cache->size());
     base::PostTaskWithTraits(
         FROM_HERE, {BrowserThread::UI},
-        base::BindOnce([](util::Promise promise) { promise.Resolve(); },
-                       std::move(promise)));
+        base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
   }
 }
 
