@@ -214,6 +214,7 @@ std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
 void RunCallbackInUI(const base::Callback<void()>& callback) {
   base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, callback);
 }
+
 template <typename... T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
   base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
@@ -414,10 +415,16 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   }
 }
 
-void Session::ResolveProxy(
-    const GURL& url,
-    const ResolveProxyHelper::ResolveProxyCallback& callback) {
-  browser_context_->GetResolveProxyHelper()->ResolveProxy(url, callback);
+v8::Local<v8::Promise> Session::ResolveProxy(const GURL& url) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  util::Promise promise(isolate);
+
+  browser_context_->GetResolveProxyHelper()->ResolveProxy(
+      url,
+      base::Bind(util::CopyablePromise::ResolveCopyablePromise<std::string>,
+                 atom::util::CopyablePromise(promise)));
+
+  return promise.GetHandle();
 }
 
 template <Session::CacheAction action>
@@ -454,11 +461,14 @@ void Session::FlushStorageData() {
   storage_partition->Flush();
 }
 
-void Session::SetProxy(const mate::Dictionary& options,
-                       const base::Closure& callback) {
+v8::Local<v8::Promise> Session::SetProxy(const mate::Dictionary& options) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  util::Promise promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   if (!browser_context_->in_memory_pref_store()) {
-    callback.Run();
-    return;
+    promise.Resolve();
+    return handle;
   }
 
   std::string proxy_rules, bypass_list, pac_url;
@@ -482,7 +492,11 @@ void Session::SetProxy(const mate::Dictionary& options,
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   }
 
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, callback);
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::BindOnce(util::Promise::ResolveEmptyPromise, std::move(promise)));
+
+  return handle;
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {
