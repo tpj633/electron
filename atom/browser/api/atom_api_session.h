@@ -11,6 +11,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
 #include "atom/browser/net/resolve_proxy_helper.h"
+#include "atom/common/promise_util.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
@@ -65,7 +66,7 @@ class Session : public mate::TrackableObject<Session>,
   void ResolveProxy(const GURL& url,
                     const ResolveProxyHelper::ResolveProxyCallback& callback);
   template <CacheAction action>
-  void DoCacheAction(const net::CompletionCallback& callback);
+  v8::Local<v8::Promise> DoCacheAction();
   void ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
   void SetProxy(const mate::Dictionary& options, const base::Closure& callback);
